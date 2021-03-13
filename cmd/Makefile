@@ -157,6 +157,7 @@ endif # !CONFIG_SPL_BUILD
 
 # core command
 obj-y += nvedit.o
+obj-y += rpt_guiext.o
 
 obj-$(CONFIG_ARCH_MVEBU) += mvebu/
 

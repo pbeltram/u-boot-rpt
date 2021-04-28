@@ -92,3 +92,8 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# Petalinux
+oe-logs
+oe-workdir
+

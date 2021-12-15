@@ -179,6 +179,32 @@ static const struct {
 	},
 };
 
+static const struct {
+	u32 id;
+	char *name;
+} zynqmp_svd_devices[] = {
+	{
+		.id = 0x04714093,
+		.name = "xck24"
+	},
+	{
+		.id = 0x04724093,
+		.name = "xck26",
+	},
+};
+
+static char *zynqmp_detect_svd_name(u32 idcode)
+{
+	u32 i;
+
+	for (i = 0; i < ARRAY_SIZE(zynqmp_svd_devices); i++) {
+		if (zynqmp_svd_devices[i].id == (idcode & 0x0FFFFFFF))
+			return zynqmp_svd_devices[i].name;
+	}
+
+	return "unknown";
+}
+
 static char *zynqmp_get_silicon_idcode_name(void)
 {
 	u32 i;
@@ -208,7 +234,7 @@ static char *zynqmp_get_silicon_idcode_name(void)
 	}
 
 	if (i >= ARRAY_SIZE(zynqmp_devices))
-		return "unknown";
+		return zynqmp_detect_svd_name(idcode);
 
 	/* Add device prefix to the name */
 	strncpy(name, "zu", ZYNQMP_VERSION_SIZE);
@@ -452,11 +478,7 @@ static int reset_reason(void)
 
 	env_set("reset_reason", reason);
 
-	ret = zynqmp_mmio_write((ulong)&crlapb_base->reset_reason, ~0, ~0);
-	if (ret)
-		return -EINVAL;
-
-	return ret;
+	return 0;
 }
 
 static int set_fdtfile(void)
@@ -624,6 +646,7 @@ int board_late_init(void)
 	if (bootseq >= 0) {
 		bootseq_len = snprintf(NULL, 0, "%i", bootseq);
 		debug("Bootseq len: %x\n", bootseq_len);
+		env_set_hex("bootseq", bootseq);
 	}
 
 	/*

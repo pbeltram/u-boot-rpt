@@ -28,8 +28,6 @@
 #include "tpm_tis.h"
 #include "tpm_internal.h"
 
-DECLARE_GLOBAL_DATA_PTR;
-
 #define TPM_ACCESS(l)			(0x0000 | ((l) << 12))
 #define TPM_INT_ENABLE(l)               (0x0008 | ((l) << 12))
 #define TPM_STS(l)			(0x0018 | ((l) << 12))
@@ -518,7 +516,6 @@ static int tpm_tis_spi_cleanup(struct udevice *dev)
 static int tpm_tis_spi_open(struct udevice *dev)
 {
 	struct tpm_chip *chip = dev_get_priv(dev);
-	struct tpm_chip_priv *priv = dev_get_uclass_priv(dev);
 
 	if (chip->is_open)
 		return -EBUSY;
@@ -674,7 +671,7 @@ static const struct tpm_tis_chip_data tpm_tis_std_chip_data = {
 
 static const struct udevice_id tpm_tis_spi_ids[] = {
 	{
-		.compatible = "tis,tpm2-spi",
+		.compatible = "tcg,tpm_tis-spi",
 		.data = (ulong)&tpm_tis_std_chip_data,
 	},
 	{ }

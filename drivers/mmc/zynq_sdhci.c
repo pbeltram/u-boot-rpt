@@ -16,7 +16,9 @@
 #include <zynqmp_tap_delay.h>
 
 #define SDHCI_ARASAN_ITAPDLY_REGISTER	0xF0F8
+#define SDHCI_ARASAN_ITAPDLY_SEL_MASK	0xFF
 #define SDHCI_ARASAN_OTAPDLY_REGISTER	0xF0FC
+#define SDHCI_ARASAN_OTAPDLY_SEL_MASK	0x3F
 #define SDHCI_ITAPDLY_CHGWIN		0x200
 #define SDHCI_ITAPDLY_ENABLE		0x100
 #define SDHCI_OTAPDLY_ENABLE		0x40
@@ -180,7 +182,7 @@ static int arasan_sdhci_execute_tuning(struct mmc *mmc, u8 opcode)
  *
  * @host:		Pointer to the sdhci_host structure.
  * @degrees		The clock phase shift between 0 - 359.
- * Return: 0 on success and error value on error
+ * Return: 0
  */
 static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 					    int degrees)
@@ -188,7 +190,6 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 	struct arasan_sdhci_priv *priv = dev_get_priv(host->mmc->dev);
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	u8 tap_delay, tap_max = 0;
-	int ret;
 	int timing = mode2timing[mmc->selected_mode];
 
 	/*
@@ -196,9 +197,7 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 	 * ZynqMP does not set phase for <=25MHz clock.
 	 * If degrees is zero, no need to do anything.
 	 */
-	if (host->version < SDHCI_SPEC_300 ||
-	    timing == MMC_TIMING_LEGACY ||
-	    timing == MMC_TIMING_UHS_SDR12 || !degrees)
+	if (SDHCI_GET_VERSION(host) < SDHCI_SPEC_300)
 		return 0;
 
 	switch (timing) {
@@ -224,9 +223,12 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
 
 	tap_delay = (degrees * tap_max) / 360;
 
-	arasan_zynqmp_set_tapdelay(priv->deviceid, 0, tap_delay);
+	/* Limit output tap_delay value to 6 bits */
+	tap_delay &= SDHCI_ARASAN_OTAPDLY_SEL_MASK;
 
-	return ret;
+	arasan_zynqmp_set_out_tapdelay(priv->deviceid, tap_delay);
+
+	return 0;
 }
 
 /**
@@ -236,7 +238,7 @@ static int sdhci_zynqmp_sdcardclk_set_phase(struct sdhci_host *host,
  *
  * @host:		Pointer to the sdhci_host structure.
  * @degrees		The clock phase shift between 0 - 359.
- * Return: 0 on success and error value on error
+ * Return: 0
  */
 static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 					    int degrees)
@@ -244,7 +246,6 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 	struct arasan_sdhci_priv *priv = dev_get_priv(host->mmc->dev);
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	u8 tap_delay, tap_max = 0;
-	int ret;
 	int timing = mode2timing[mmc->selected_mode];
 
 	/*
@@ -252,9 +253,7 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 	 * ZynqMP does not set phase for <=25MHz clock.
 	 * If degrees is zero, no need to do anything.
 	 */
-	if (host->version < SDHCI_SPEC_300 ||
-	    timing == MMC_TIMING_LEGACY ||
-	    timing == MMC_TIMING_UHS_SDR12 || !degrees)
+	if (SDHCI_GET_VERSION(host) < SDHCI_SPEC_300)
 		return 0;
 
 	switch (timing) {
@@ -280,9 +279,12 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
 
 	tap_delay = (degrees * tap_max) / 360;
 
-	arasan_zynqmp_set_tapdelay(priv->deviceid, tap_delay, 0);
+	/* Limit input tap_delay value to 8 bits */
+	tap_delay &= SDHCI_ARASAN_ITAPDLY_SEL_MASK;
 
-	return ret;
+	arasan_zynqmp_set_in_tapdelay(priv->deviceid, tap_delay);
+
+	return 0;
 }
 
 /**
@@ -292,24 +294,22 @@ static int sdhci_zynqmp_sampleclk_set_phase(struct sdhci_host *host,
  *
  * @host:		Pointer to the sdhci_host structure.
  * @degrees		The clock phase shift between 0 - 359.
- * Return: 0 on success and error value on error
+ * Return: 0
  */
 static int sdhci_versal_sdcardclk_set_phase(struct sdhci_host *host,
 					    int degrees)
 {
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	u8 tap_delay, tap_max = 0;
-	int ret;
 	int timing = mode2timing[mmc->selected_mode];
+	u32 regval;
 
 	/*
 	 * This is applicable for SDHCI_SPEC_300 and above
 	 * Versal does not set phase for <=25MHz clock.
 	 * If degrees is zero, no need to do anything.
 	 */
-	if (host->version < SDHCI_SPEC_300 ||
-	    timing == MMC_TIMING_LEGACY ||
-	    timing == MMC_TIMING_UHS_SDR12 || !degrees)
+	if (SDHCI_GET_VERSION(host) < SDHCI_SPEC_300)
 		return 0;
 
 	switch (timing) {
@@ -335,18 +335,18 @@ static int sdhci_versal_sdcardclk_set_phase(struct sdhci_host *host,
 
 	tap_delay = (degrees * tap_max) / 360;
 
+	/* Limit output tap_delay value to 6 bits */
+	tap_delay &= SDHCI_ARASAN_OTAPDLY_SEL_MASK;
+
 	/* Set the Clock Phase */
-	if (tap_delay) {
-		u32 regval;
+	regval = sdhci_readl(host, SDHCI_ARASAN_OTAPDLY_REGISTER);
+	regval |= SDHCI_OTAPDLY_ENABLE;
+	sdhci_writel(host, regval, SDHCI_ARASAN_OTAPDLY_REGISTER);
+	regval &= ~SDHCI_ARASAN_OTAPDLY_SEL_MASK;
+	regval |= tap_delay;
+	sdhci_writel(host, regval, SDHCI_ARASAN_OTAPDLY_REGISTER);
 
-		regval = sdhci_readl(host, SDHCI_ARASAN_OTAPDLY_REGISTER);
-		regval |= SDHCI_OTAPDLY_ENABLE;
-		sdhci_writel(host, regval, SDHCI_ARASAN_OTAPDLY_REGISTER);
-		regval |= tap_delay;
-		sdhci_writel(host, regval, SDHCI_ARASAN_OTAPDLY_REGISTER);
-	}
-
-	return ret;
+	return 0;
 }
 
 /**
@@ -356,24 +356,22 @@ static int sdhci_versal_sdcardclk_set_phase(struct sdhci_host *host,
  *
  * @host:		Pointer to the sdhci_host structure.
  * @degrees		The clock phase shift between 0 - 359.
- * Return: 0 on success and error value on error
+ * Return: 0
  */
 static int sdhci_versal_sampleclk_set_phase(struct sdhci_host *host,
 					    int degrees)
 {
 	struct mmc *mmc = (struct mmc *)host->mmc;
 	u8 tap_delay, tap_max = 0;
-	int ret;
 	int timing = mode2timing[mmc->selected_mode];
+	u32 regval;
 
 	/*
 	 * This is applicable for SDHCI_SPEC_300 and above
 	 * Versal does not set phase for <=25MHz clock.
 	 * If degrees is zero, no need to do anything.
 	 */
-	if (host->version < SDHCI_SPEC_300 ||
-	    timing == MMC_TIMING_LEGACY ||
-	    timing == MMC_TIMING_UHS_SDR12 || !degrees)
+	if (SDHCI_GET_VERSION(host) < SDHCI_SPEC_300)
 		return 0;
 
 	switch (timing) {
@@ -399,22 +397,22 @@ static int sdhci_versal_sampleclk_set_phase(struct sdhci_host *host,
 
 	tap_delay = (degrees * tap_max) / 360;
 
+	/* Limit input tap_delay value to 8 bits */
+	tap_delay &= SDHCI_ARASAN_ITAPDLY_SEL_MASK;
+
 	/* Set the Clock Phase */
-	if (tap_delay) {
-		u32 regval;
+	regval = sdhci_readl(host, SDHCI_ARASAN_ITAPDLY_REGISTER);
+	regval |= SDHCI_ITAPDLY_CHGWIN;
+	sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
+	regval |= SDHCI_ITAPDLY_ENABLE;
+	sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
+	regval &= ~SDHCI_ARASAN_ITAPDLY_SEL_MASK;
+	regval |= tap_delay;
+	sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
+	regval &= ~SDHCI_ITAPDLY_CHGWIN;
+	sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
 
-		regval = sdhci_readl(host, SDHCI_ARASAN_ITAPDLY_REGISTER);
-		regval |= SDHCI_ITAPDLY_CHGWIN;
-		sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
-		regval |= SDHCI_ITAPDLY_ENABLE;
-		sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
-		regval |= tap_delay;
-		sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
-		regval &= ~SDHCI_ITAPDLY_CHGWIN;
-		sdhci_writel(host, regval, SDHCI_ARASAN_ITAPDLY_REGISTER);
-	}
-
-	return ret;
+	return 0;
 }
 
 static void arasan_sdhci_set_tapdelay(struct sdhci_host *host)
@@ -533,6 +531,11 @@ static void arasan_sdhci_set_control_reg(struct sdhci_host *host)
 		reg = sdhci_readw(host, SDHCI_HOST_CONTROL2);
 		reg |= SDHCI_CTRL_VDD_180;
 		sdhci_writew(host, reg, SDHCI_HOST_CONTROL2);
+		/*
+		 * 5ms delay is required as per SD3.0 spec while switching
+		 * voltage to 1.8v
+		 */
+		mdelay(5);
 	}
 
 	if (mmc->selected_mode > SD_HS &&

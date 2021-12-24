@@ -10,6 +10,7 @@ obj-$(CONFIG_CMD_BOOTM) += bootm.o
 obj-y += help.o
 obj-y += version.o
 obj-y += pluto_sdr.o
+obj-y += pzsdr1.o
 
 # command
 obj-$(CONFIG_CMD_AES) += aes.o

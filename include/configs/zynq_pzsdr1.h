@@ -141,10 +141,10 @@
 #ifdef CONFIG_PREBOOT
 #undef CONFIG_PREBOOT
 #endif
-#define CONFIG_PREBOOT	"echo U-BOOT for Picozed SDR; pzsdr1_init;" \
-	"echo Look for ENV from FSBL shared area at 0xFFFFFC00; " \
-	"if itest *0xFFFFFC00 == 0xCAFEBABE; then echo Found valid ENV FSBL magic; " \
-	"env import -t 0xFFFFFC04; fi;setenv preboot; echo; dhcp"
+#define CONFIG_PREBOOT "echo U-BOOT for Picozed SDR; pzsdr1_init;" \
+  "echo Look for ENV from FSBL shared area at 0xFFFFFC00; " \
+  "if itest *0xFFFFFC00 == 0xCAFEBABE; then echo Found valid ENV FSBL magic; " \
+  "env import -t 0xFFFFFC04; fi;setenv preboot; echo; dhcp"
 
 #endif /* __CONFIG_ZYNQ_PZSDR1_H */
 

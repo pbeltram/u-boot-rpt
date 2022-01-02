@@ -44,7 +44,7 @@
 };
 
 &gem0 {
-  status = "okay";
+  status = "disabled"; /* "okay" to enable */
   phy-mode = "rgmii-id";
   phy-handle = <&ethernet_phy>;
 

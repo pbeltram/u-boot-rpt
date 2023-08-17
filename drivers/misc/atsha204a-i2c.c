@@ -237,10 +237,10 @@ int atsha204a_wakeup(struct udevice *dev)
 		}
 
 		debug("success\n");
-		break;
+		return 0;
 	}
 
-	return 0;
+	return -ETIMEDOUT;
 }
 
 int atsha204a_idle(struct udevice *dev)
@@ -277,6 +277,7 @@ static int atsha204a_transaction(struct udevice *dev, struct atsha204a_req *req,
 	}
 
 	do {
+		udelay(ATSHA204A_EXECTIME);
 		res = atsha204a_recv_resp(dev, resp);
 		if (!res || res == -EMSGSIZE || res == -EBADMSG)
 			break;
@@ -284,7 +285,6 @@ static int atsha204a_transaction(struct udevice *dev, struct atsha204a_req *req,
 		debug("ATSHA204A transaction polling for response "
 		      "(timeout = %d)\n", timeout);
 
-		udelay(ATSHA204A_EXECTIME);
 		timeout -= ATSHA204A_EXECTIME;
 	} while (timeout > 0);
 
@@ -385,7 +385,8 @@ static int atsha204a_ofdata_to_platdata(struct udevice *dev)
 	fdt_addr_t *priv = dev_get_priv(dev);
 	fdt_addr_t addr;
 
-	addr = fdtdec_get_addr(gd->fdt_blob, dev_of_offset(dev), "reg");
+	ofnode node = dev_ofnode(dev);
+	addr = ofnode_read_u32_default(node, "reg", -1);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("Can't get ATSHA204A I2C base address\n");
 		return -ENXIO;

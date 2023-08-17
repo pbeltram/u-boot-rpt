@@ -63,6 +63,8 @@ fit-dtb.blob*
 #
 /include/config/
 /include/generated/
+#/include/configs/platform-auto.h
+#/include/configs/platform-top.h
 
 # stgit generated dirs
 patches-*
@@ -92,3 +94,12 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# Enclustra buildscripts related files
+postfetch.sh
+postbuild.sh
+*scr
+
+# Petalinux
+oe-logs
+oe-workdir

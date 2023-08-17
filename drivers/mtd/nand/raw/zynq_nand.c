@@ -1066,6 +1066,10 @@ static int zynq_nand_check_is_16bit_bw_flash(void)
 	return is_16bit_bw;
 }
 
+#ifdef CONFIG_ENCLUSTRA_NANDMUX
+extern void zx_set_storage (char * arg);
+#endif
+
 static int zynq_nand_probe(struct udevice *dev)
 {
 	struct zynq_nand_info *zynq = dev_get_priv(dev);
@@ -1089,6 +1093,9 @@ static int zynq_nand_probe(struct udevice *dev)
 		printf("Failed to find nand node in dt\n");
 		return -ENODEV;
 	}
+#ifdef CONFIG_ENCLUSTRA_NANDMUX
+        zx_set_storage("NAND");
+#endif
 
 	if (!ofnode_is_available(of_nand)) {
 		debug("Nand node in dt disabled\n");

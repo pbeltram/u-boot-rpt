@@ -1,0 +1,61 @@
+/dts-v1/;
+
+#include "ME-XU8-4CG-1E-D11E.dtsi"
+
+/ {
+	aliases {
+		i2c1 = &i2c1;
+	};
+
+};
+
+&qspi {
+  /delete-node/ flash0;
+  flash0: flash@0 {
+    reg = <0x0>;
+    compatible = "spansion,s25fl512s", "jedec,spi-nor";
+    spi-rx-bus-width = <0x4>;
+    spi-tx-bus-width = <0x4>;
+    spi-max-frequency = <50000000>;
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    partition@0 {
+      label = "qspi-whole";
+      reg = <0x00000000 0x04000000>;
+    };
+    partition@1 {
+      label = "qspi-boot";
+      reg = <0x0 0x00C00000>;        /* 12M */
+    };
+    partition@2 {
+      label = "qspi-bootenv";
+      reg = <0x00C00000 0x00100000>; /*  1M */
+    };
+    partition@3 {
+      label = "qspi-linux";
+      reg = <0x00D00000 0x02B00000>; /* 45M */
+    };
+    partition@4 {
+      label = "qspi-flashfs";
+      reg = <0x03800000 0x00800000>; /* 8M */
+    };
+
+  };
+};
+
+&gem0 {
+  /delete-property/ local-mac-address;
+};
+
+&gem3 {
+  /delete-property/ local-mac-address;
+};
+
+/* SD1 with level shifter */
+&sdhci1 {
+  status = "okay";
+  no-1-8-v; /* for 1.0 silicon */
+  wp-inverted;
+  xlnx,mio_bank = <1>;
+};

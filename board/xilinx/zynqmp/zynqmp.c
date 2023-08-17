@@ -41,6 +41,10 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+/*#if defined(CONFIG_ENCLUSTRA_QSPI_FLASHMAP)
+extern void enclustra_flash_map(void);
+#endif*/
+
 #if defined(CONFIG_FPGA) && defined(CONFIG_FPGA_ZYNQMPPL) && \
     !defined(CONFIG_SPL_BUILD) || (defined(CONFIG_SPL_FPGA_SUPPORT) && \
     defined(CONFIG_SPL_BUILD))
@@ -316,6 +320,9 @@ int board_init(void)
 	printf("Chip ID:\t%s\n", zynqmppl.name);
 	fpga_init();
 	fpga_add(fpga_xilinx, &zynqmppl);
+/*#if defined(CONFIG_ENCLUSTRA_QSPI_FLASHMAP)
+	enclustra_flash_map();
+#endif*/
 #endif
 
 	if (current_el() == 3)

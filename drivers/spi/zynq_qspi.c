@@ -290,6 +290,10 @@ static int zynq_qspi_child_pre_probe(struct udevice *bus)
 	return 0;
 }
 
+#ifdef CONFIG_ENCLUSTRA_NANDMUX
+extern void zx_set_storage(char* arg);
+#endif
+
 static int zynq_qspi_probe(struct udevice *bus)
 {
 	struct zynq_qspi_platdata *plat = dev_get_platdata(bus);
@@ -297,6 +301,10 @@ static int zynq_qspi_probe(struct udevice *bus)
 	struct clk clk;
 	unsigned long clock;
 	int ret;
+
+#ifdef CONFIG_ENCLUSTRA_NANDMUX
+	zx_set_storage("QSPI");
+#endif
 
 	priv->regs = plat->regs;
 	priv->fifo_depth = ZYNQ_QSPI_FIFO_DEPTH;
